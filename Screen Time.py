@@ -1,12 +1,19 @@
+#!/usr/bin/env python3
+
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 import csv 
 
+FILENAME = "Schmidt.csv"
+
 class DataEntryForm(ttk.Frame):
     def __init__(self, parent):
         ttk.Frame.__init__(self, parent, padding="10 10 10 10")
         self.pack()
+
+        style = ttk.Style()
+        style.theme_use("default")
 
         # Defines variables for text entry
         # User Info Section
@@ -18,15 +25,14 @@ class DataEntryForm(ttk.Frame):
         self.Dtype = tk.StringVar()
         self.Hday = tk.StringVar()  
         # Mental Health
-        self.Positive = tk.StringVar()  
-        self.Negative = tk.StringVar()  
+        self.Positive = tk.StringVar()    
         # Agree and Submit
         self.Agree = tk.StringVar()  
 
 
         # Dropdown Options - Screen Time
         Favorite_App = ["","Social Media Apps", "Game Apps", "Video Streaming Apps", "Other"]
-        Device_Type = ["","Desktop", "Laptop", "Tablet", "Other"]
+        Device_Type = ["","Desktop", "Laptop", "Tablet", "Phone", "Other"]
 
         # Creates the frames for Entry Form
         User_Info = ttk.LabelFrame(self, text="User Info")
@@ -83,9 +89,9 @@ class DataEntryForm(ttk.Frame):
         # Labels and Text Entry for Mental Health
         ttk.Label(Mental_Health, text="Has your screen time positivley or negativley impacted your mental health?").grid(
             columnspan=2, row=0, sticky=tk.W)
-        ttk.Radiobutton(Mental_Health, text="Positive", variable=self.Positive, value="Yes").grid(
+        ttk.Radiobutton(Mental_Health, text="Positive", variable=self.Positive, value="Positive").grid(
             column=0, row=1)
-        ttk.Radiobutton(Mental_Health, text="Negative", variable=self.Positive, value="No").grid(
+        ttk.Radiobutton(Mental_Health, text="Negative", variable=self.Positive, value="Negative").grid(
             column=1, row=1)
         
         # Lables and Text Entry for Agreement & Submission
@@ -96,7 +102,7 @@ class DataEntryForm(ttk.Frame):
         Agree_Submit.grid_rowconfigure(1, weight=1)   
         ttk.Button(Agree_Submit, text="Submit Data", command=self.check_data).grid(
             column=0, row=2)
-        ttk.Button(Agree_Submit, text="See Trends", command=self.get_data).grid(
+        ttk.Button(Agree_Submit, text="See Entries", command=self.get_data).grid(
             column=1, row=2)
         
         # Evenly distributes widgets inside of frame
@@ -114,12 +120,8 @@ class DataEntryForm(ttk.Frame):
         Agree_Submit.columnconfigure(0, weight=1)
         Agree_Submit.columnconfigure(1, weight=1)
 
-#----------------------------------------------------------#
-    file = "Schmidt.csv"
-
     #Checks to see if all fields are filled out.
     def check_data(self):
-        #Checks if all fields are filled out
         if self.Fname.get() == "" or self.Lname.get() == "" or self.Age.get() == "" or self.Favapp.get() == "" or self.Dtype.get() == "" or self.Hday.get() == "" or self.Positive.get() == "":
                 messagebox.showerror("Error", "Please fill out all fields")
                 return
@@ -133,7 +135,6 @@ class DataEntryForm(ttk.Frame):
     #Writes to CSV FILE
     def save_data(self):
         # Determine the impact on mental health based on the selected radiobutton
-        mental_health_impact = "Positive" if self.Positive.get() == "Yes" else "Negative"
         data = [
         self.Fname.get(),
         self.Lname.get(),
@@ -141,16 +142,17 @@ class DataEntryForm(ttk.Frame):
         self.Favapp.get(),
         self.Dtype.get(),
         self.Hday.get(),
-        mental_health_impact
+        self.Positive.get()
         ]
         try:
-            with open("Schmidt.csv", mode='a', newline='') as file:
+            # Opens CSV file and appends data to it
+            with open(FILENAME, mode='a', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow(data)
 
             messagebox.showinfo("Success", "Data submitted successfully")
 
-            # Clears the entry boxes
+            # Clears the entry boxes .set(methods)
             self.Fname.set("")
             self.Lname.set("")
             self.Age.set("")
@@ -158,6 +160,7 @@ class DataEntryForm(ttk.Frame):
             self.Dtype.set("")
             self.Hday.set("")
             self.Positive.set("") 
+            self.Agree.set(False)
 
         except Exception as e:
             messagebox.showerror("Error", f"Data could not be submitted: {e}")
@@ -166,9 +169,8 @@ class DataEntryForm(ttk.Frame):
     def get_data(self):
         self.entries = []
         self.current_entry=0
-        file = "Schmidt.csv"
         try:
-            with open(file, mode='r', newline="") as file:
+            with open(FILENAME, mode='r', newline="") as file:
                 csv_reader = csv.reader(file)
                 for row in csv_reader:
                     self.entries.append(row)
@@ -182,51 +184,73 @@ class DataEntryForm(ttk.Frame):
     def display_entry(self, entry):
         if self.entries:
             entry = self.entries[self.current_entry]
+            window = tk.Toplevel(self)
+            window.title("Data Entries")
+            window.geometry("260x200")
 
-        window = tk.Toplevel(self)
-        window.title("Data Entry")
-        window.geometry("500x350")
+            self.toplevel = window
 
-        
-        ttk.Label(window, text="First Name:").grid(row=0, column=0, sticky=tk.W)
-        ttk.Label(window, text=entry[0], state="readonly").grid(row=0, column=1)
+            # Create a frame to contain all widgets
+            main_frame = ttk.Frame(window)
+            main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        ttk.Label(window, text="Last Name:").grid(row=1, column=0, sticky=tk.W)
-        ttk.Label(window, text=entry[1], state="readonly").grid(row=1, column=1)
+            ttk.Label(main_frame, text="First Name:").grid(row=0, column=0, sticky=tk.W)
+            ttk.Label(main_frame, text=entry[0]).grid(row=0, column=1)
 
-        ttk.Label(window, text="Age:").grid(row=2, column=0, sticky=tk.W)
-        ttk.Label(window, text=entry[2], state="readonly").grid(row=2, column=1)
+            ttk.Label(main_frame, text="Last Name:").grid(row=1, column=0, sticky=tk.W)
+            ttk.Label(main_frame, text=entry[1]).grid(row=1, column=1)
 
-        ttk.Label(window, text="Favorite App:").grid(row=3, column=0, sticky=tk.W)
-        ttk.Label(window, text=entry[3], state="readonly").grid(row=3, column=1)
+            ttk.Label(main_frame, text="Age:").grid(row=2, column=0, sticky=tk.W)
+            ttk.Label(main_frame, text=entry[2]).grid(row=2, column=1)
 
-        ttk.Label(window, text="Device Type:").grid(row=4, column=0, sticky=tk.W)
-        ttk.Label(window, text=entry[4], state="readonly").grid(row=4, column=1)
+            ttk.Label(main_frame, text="Favorite App:").grid(row=3, column=0, sticky=tk.W)
+            ttk.Label(main_frame, text=entry[3]).grid(row=3, column=1)
 
-        ttk.Label(window, text="AVG Hours/Day:").grid(row=5, column=0, sticky=tk.W)
-        ttk.Label(window, text=entry[5], state="readonly").grid(row=5, column=1)
+            ttk.Label(main_frame, text="Device Type:").grid(row=4, column=0, sticky=tk.W)
+            ttk.Label(main_frame, text=entry[4]).grid(row=4, column=1)
 
-        ttk.Label(window, text="Mental Health Impact:").grid(row=6, column=0, sticky=tk.W)
-        ttk.Label(window, text=entry[6], state="readonly").grid(row=6, column=1)
+            ttk.Label(main_frame, text="AVG Hours/Day:").grid(row=5, column=0, sticky=tk.W)
+            ttk.Label(main_frame, text=entry[5]).grid(row=5, column=1)
 
-        ttk.Button(window, text="Close", command=window.destroy).grid(row=7, column=1, pady=10)
-        ttk.Button(window, text="Next", command=self.load_next).grid(row=7, column=0, pady=10)
-        ttk.Button(window, text="Back", command=self.load_previous).grid(row=7, column=2, pady=10)
-        ttk.Button(window, text="View Conclusions", command=self.data_analytics ).grid(row=8, columnspan=2, pady=10)
+            ttk.Label(main_frame, text="Mental Health Impact:").grid(row=6, column=0, sticky=tk.W)
+            ttk.Label(main_frame, text=entry[6]).grid(row=6, column=1)
 
-    def load_next():
-        pass
+            # Create a frame to contain the buttons
+            button_frame = ttk.Frame(main_frame)
+            button_frame.grid(row=7, column=0, columnspan=2, pady=10)
 
-    def load_previous():
-        pass
+            ttk.Button(button_frame, text="Back", command=self.load_previous).pack(side=tk.LEFT, padx=5)
+            ttk.Button(button_frame, text="Close", command=window.destroy).pack(side=tk.LEFT, padx=5)
+            ttk.Button(button_frame, text="Next", command=self.load_next).pack(side=tk.LEFT, padx=5)
 
-    def data_analytics():
-        pass
-    
+        else:
+            messagebox.showinfo("No entries", "There are no entries to display.")
 
+
+    #Loads the next entry and destroys the previous
+    def load_next(self):
+        if self.current_entry < len(self.entries)-1:
+            self.current_entry += 1
+            if self.toplevel:
+                self.toplevel.destroy()
+            self.display_entry(self.entries[self.current_entry])
+        else:
+            messagebox.showinfo("No more entries", "There are no more entries")
+
+    #Loads the previous entry and destroys the next
+    def load_previous(self):
+        if self.current_entry > 0:
+            self.current_entry -= 1
+            if self.toplevel:
+                self.toplevel.destroy()
+            self.display_entry(self.entries[self.current_entry])
+        else:
+            messagebox.showinfo("No previous entries", "You are already at the first entry")
+
+   
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Data Entry Form - Schmidt")
-    root.geometry("500x350")
+    root.geometry("500x320")
     DataEntryForm(root)
     root.mainloop()
